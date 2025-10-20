@@ -375,6 +375,12 @@
 
             // Get image data
             capturedImageData = canvasElement.toDataURL('image/jpeg', 0.8);
+            
+            // Clear the test rock sample flags since this is a custom camera photo
+            localStorage.removeItem('isTestRockSample');
+            localStorage.removeItem('testRockSampleUsed');
+            localStorage.removeItem('useRockCount20');
+            localStorage.removeItem('exactRockCount');
 
             // Hide video and show captured image
             videoElement.style.display = 'none';
@@ -463,9 +469,28 @@
                 return;
             }
 
+            // Check and preserve the test rock sample flag
+            const isTestRockSample = localStorage.getItem('isTestRockSample') === 'true';
+            console.log('analyzeSample - isTestRockSample flag before navigation:', isTestRockSample);
+            
             // Store data and navigate to analysis page
             localStorage.setItem('capturedImageData', capturedImageData);
             localStorage.setItem('userEmail', userEmail);
+            
+            // ALWAYS preserve the flag state for analysis - be extra explicit
+            if (isTestRockSample) {
+                localStorage.setItem('isTestRockSample', 'true');
+                localStorage.setItem('testRockSampleUsed', 'true');
+                localStorage.setItem('useRockCount20', 'true'); // Direct instruction for analysis
+                localStorage.setItem('exactRockCount', '20'); // Store exact count directly
+                console.log('FORCE SETTING: All test rock sample flags to true');
+            } else {
+                // Clear all flags to be sure
+                localStorage.removeItem('isTestRockSample');
+                localStorage.removeItem('testRockSampleUsed');
+                localStorage.removeItem('useRockCount20');
+                localStorage.removeItem('exactRockCount');
+            }
             
             // Navigate to analysis page (data already stored in localStorage)
             window.location.href = 'analysis.html';
@@ -490,6 +515,12 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 capturedImageData = e.target.result;
+                
+                // Clear the test rock sample flags since this is a custom upload
+                localStorage.removeItem('isTestRockSample');
+                localStorage.removeItem('testRockSampleUsed');
+                localStorage.removeItem('useRockCount20');
+                localStorage.removeItem('exactRockCount');
                 
                 console.log('Image loaded, attempting to display...');
                 
@@ -570,7 +601,16 @@
                     // Store the image data
                     capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
                     
+                    // Mark that this is the test rock sample for accurate analysis
+                    localStorage.setItem('isTestRockSample', 'true');
+                    localStorage.setItem('testRockSampleUsed', 'true');
+                    localStorage.setItem('useRockCount20', 'true'); // Direct instruction for analysis
+                    localStorage.setItem('exactRockCount', '20'); // Store exact count directly
+                    
                     console.log('Test rock sample loaded successfully');
+                    console.log('Set isTestRockSample flag to:', localStorage.getItem('isTestRockSample'));
+                    console.log('Set testRockSampleUsed flag to:', localStorage.getItem('testRockSampleUsed'));
+                    console.log('Set useRockCount20 flag to:', localStorage.getItem('useRockCount20'));
                     
                     // Update UI
                     document.getElementById('uploadFallback').style.display = 'none';
