@@ -1,0 +1,12 @@
+USACE Sacramento District Logo Information:
+
+The HTML file is now configured to use "usace-logo.png" as the logo file.
+Please save the USACE Sacramento District logo image as "usace-logo.png" 
+in this directory to complete the setup.
+
+Logo description:
+- Red rounded rectangle background with white border
+- White castle icon with three towers and arched gateway
+- Text: "US Army Corps of Engineers®" and "Sacramento District"
+- Clean, professional design suitable for mobile display
+

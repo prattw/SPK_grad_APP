@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USACE Sacramento District</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 50px;
+        }
+
+        .logo img {
+            /* Responsive sizing for mobile devices */
+            max-width: 280px;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid red;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="email"]:focus {
+            border-color: red;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #808080;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #666666;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Camera styles */
+        .camera-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .camera-preview {
+            width: 100%;
+            max-width: 350px;
+            height: 350px;
+            background-color: #000;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvasElement {
+            display: none;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .capture-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 4px solid #808080;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .retake-btn, .back-btn {
+            padding: 10px 20px;
+            border: 2px solid #808080;
+            background-color: white;
+            color: #808080;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .analyze-btn {
+            padding: 12px 24px;
+            border: none;
+            background-color: #DC143C;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .analyze-btn:hover {
+            background-color: #B22222;
+        }
+
+        .captured-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 24px;
+                margin-bottom: 40px;
+            }
+            
+            .logo img {
+                /* Smaller sizing for mobile phones like Samsung S25 */
+                max-width: 250px;
+                max-height: 150px;
+                width: auto;
+                height: auto;
+            }
+            
+            input[type="email"], .btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 360px) {
+            .logo img {
+                max-width: 200px;
+                max-height: 120px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <!-- Primary logo from local SPK image file -->
+            <img src="SPK.png" alt="USACE Sacramento District Logo" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                 onload="this.style.display='block'; this.nextElementSibling.style.display='none';">
+        </div>
+        
+        <form id="emailForm">
+            <div class="form-group">
+                <input 
+                    type="email" 
+                    id="emailInput" 
+                    placeholder="Enter your email address"
+                    required
+                    autocomplete="email"
+                >
+            </div>
+            
+            <button type="submit" class="btn" id="submitBtn">
+                Take Picture of Sample
+            </button>
+        </form>
+
+        <!-- Camera Interface -->
+        <div class="camera-container" id="cameraContainer">
+            <div class="camera-preview" id="cameraPreview">
+                <video id="videoElement" autoplay muted playsinline></video>
+                <canvas id="canvasElement"></canvas>
+            </div>
+            
+            <div class="camera-controls">
+                <button class="back-btn" onclick="closeCamera()">Back</button>
+                <button class="capture-btn" id="captureBtn" onclick="capturePhoto()">📷</button>
+                <button class="retake-btn" id="retakeBtn" onclick="retakePhoto()" style="display: none;">Retake</button>
+                <button class="analyze-btn" id="analyzeBtn" onclick="analyzeSample()" style="display: none;">Analyze Sample</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const emailInput = document.getElementById('emailInput');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (emailInput.value.trim() === '') {
+                alert('Please enter your email address');
+                return;
+            }
+            
+            // Email validation for approved domains only
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            // Check if email is from approved domains
+            const approvedDomains = ['usace.army.mil', 'usgs.gov'];
+            const emailDomain = emailInput.value.split('@')[1];
+            
+            if (!approvedDomains.includes(emailDomain)) {
+                alert('Invalid email address');
+                return;
+            }
+            
+            // Disable button and change text
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Opening Camera...';
+            
+            // Store email for later use
+            const userEmail = emailInput.value;
+            
+            // Open camera for rock photography
+            openCamera(userEmail);
+        });
+
+        // Auto-focus on email input when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('emailInput').focus();
+        });
+
+        // Camera functionality
+        let currentStream = null;
+        let capturedImageData = null;
+
+        async function openCamera(userEmail) {
+            try {
+                // Hide the form and show camera
+                document.getElementById('emailForm').style.display = 'none';
+                document.getElementById('cameraContainer').style.display = 'flex';
+
+                // Request camera access
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // Use back camera for better rock photography
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+
+                // Display camera stream
+                const videoElement = document.getElementById('videoElement');
+                videoElement.srcObject = currentStream;
+                
+                // Reset button states
+                document.getElementById('captureBtn').style.display = 'flex';
+                document.getElementById('retakeBtn').style.display = 'none';
+                document.getElementById('analyzeBtn').style.display = 'none';
+                
+                // Reset submit button
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Take Picture of Sample';
+
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('Camera access denied. Please allow camera permissions to take photos of rock samples.');
+                
+                // Reset to form view
+                document.getElementById('emailForm').style.display = 'block';
+                document.getElementById('cameraContainer').style.display = 'none';
+                
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Take Picture of Sample';
+            }
+        }
+
+        function capturePhoto() {
+            const videoElement = document.getElementById('videoElement');
+            const canvasElement = document.getElementById('canvasElement');
+            const ctx = canvasElement.getContext('2d');
+
+            // Set canvas size to match video
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+
+            // Draw video frame to canvas
+            ctx.drawImage(videoElement, 0, 0);
+
+            // Get image data
+            capturedImageData = canvasElement.toDataURL('image/jpeg', 0.8);
+
+            // Hide video and show captured image
+            videoElement.style.display = 'none';
+            
+            // Create and display captured image
+            let img = document.getElementById('capturedImg');
+            if (!img) {
+                img = document.createElement('img');
+                img.id = 'capturedImg';
+                img.className = 'captured-image';
+                document.getElementById('cameraPreview').appendChild(img);
+            }
+            img.src = capturedImageData;
+            img.style.display = 'block';
+
+            // Update button states
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('retakeBtn').style.display = 'inline-block';
+            document.getElementById('analyzeBtn').style.display = 'inline-block';
+
+            // Stop camera stream
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+        }
+
+        function retakePhoto() {
+            // Reset camera view
+            document.getElementById('videoElement').style.display = 'block';
+            const img = document.getElementById('capturedImg');
+            if (img) {
+                img.style.display = 'none';
+            }
+
+            // Update button states
+            document.getElementById('captureBtn').style.display = 'flex';
+            document.getElementById('retakeBtn').style.display = 'none';
+            document.getElementById('analyzeBtn').style.display = 'none';
+
+            // Restart camera
+            openCamera(document.getElementById('emailInput').value);
+        }
+
+        function closeCamera() {
+            // Stop camera stream
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+
+            // Hide camera and show form
+            document.getElementById('cameraContainer').style.display = 'none';
+            document.getElementById('emailForm').style.display = 'block';
+
+            // Reset video element
+            const videoElement = document.getElementById('videoElement');
+            videoElement.srcObject = null;
+            videoElement.style.display = 'block';
+
+            // Reset captured image
+            const img = document.getElementById('capturedImg');
+            if (img) {
+                img.style.display = 'none';
+            }
+
+            // Reset button states
+            document.getElementById('captureBtn').style.display = 'flex';
+            document.getElementById('retakeBtn').style.display = 'none';
+            document.getElementById('analyzeBtn').style.display = 'none';
+        }
+
+        function analyzeSample() {
+            // Get user email and image data
+            const userEmail = document.getElementById('emailInput').value;
+            
+            if (!capturedImageData) {
+                alert('No image captured. Please take a photo first.');
+                return;
+            }
+
+            // Store data and navigate to analysis page
+            localStorage.setItem('capturedImageData', capturedImageData);
+            localStorage.setItem('userEmail', userEmail);
+            
+            // Navigate to analysis page
+            window.location.href = `analysis.html?email=${encodeURIComponent(userEmail)}&image=${encodeURIComponent(capturedImageData)}`;
+        }
+    </script>
+</body>
+</html>
