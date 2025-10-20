@@ -223,4 +223,4 @@ if __name__ == '__main__':
     if EMAIL_PASSWORD == "your-app-password":
         print("WARNING: Please update EMAIL_PASSWORD in server.py with your CCA email app password")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)

@@ -241,6 +241,33 @@
                 <button class="retake-btn" id="retakeBtn" onclick="retakePhoto()" style="display: none;">Retake</button>
                 <button class="analyze-btn" id="analyzeBtn" onclick="analyzeSample()" style="display: none;">Analyze Sample</button>
             </div>
+            
+            <!-- File upload fallback for camera access issues -->
+            <div id="uploadFallback" style="display: none; margin-top: 20px; text-align: center;">
+                
+                <!-- Default rock sample option -->
+                <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+                    <h4 style="margin-bottom: 10px; color: #333;">Test with Sample Rock Image</h4>
+                    <button class="btn" onclick="loadTestRockSample()" style="background-color: #28a745; margin-bottom: 15px;">
+                        Use Test Rock Sample
+                    </button>
+                    <p style="font-size: 12px; color: #666;">Click above to test with the included rock sample image</p>
+                </div>
+                
+                <div style="margin: 20px 0; text-align: center; color: #666;">
+                    <strong>OR</strong>
+                </div>
+                
+                <!-- Custom file upload -->
+                <input type="file" id="imageUpload" accept="image/*" style="margin-bottom: 15px;">
+                <br>
+                <button class="btn" onclick="uploadImage()" style="margin-top: 10px;">Upload Your Own Rock Image</button>
+            </div>
+            
+            <!-- Image preview area for uploaded files -->
+            <div id="uploadedImagePreview" style="display: none; width: 100%; max-width: 350px; height: 350px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 2px solid #ccc;">
+                <img id="uploadedImage" style="width: 100%; height: 100%; object-fit: cover;" alt="Uploaded rock sample">
+            </div>
         </div>
     </div>
 
@@ -323,11 +350,10 @@
 
             } catch (error) {
                 console.error('Error accessing camera:', error);
-                alert('Camera access denied. Please allow camera permissions to take photos of rock samples.');
                 
-                // Reset to form view
-                document.getElementById('emailForm').style.display = 'block';
-                document.getElementById('cameraContainer').style.display = 'none';
+                // Show upload fallback instead of going back to form
+                document.getElementById('uploadFallback').style.display = 'block';
+                document.getElementById('captureBtn').style.display = 'none';
                 
                 const submitBtn = document.getElementById('submitBtn');
                 submitBtn.disabled = false;
@@ -378,18 +404,25 @@
 
         function retakePhoto() {
             // Reset camera view
-            document.getElementById('videoElement').style.display = 'block';
-            const img = document.getElementById('capturedImg');
-            if (img) {
-                img.style.display = 'none';
-            }
+            const videoElement = document.getElementById('videoElement');
+            const cameraPreview = document.getElementById('cameraPreview');
+            const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+            
+            if (videoElement) videoElement.style.display = 'block';
+            if (cameraPreview) cameraPreview.style.display = 'block';
+            if (uploadedImagePreview) uploadedImagePreview.style.display = 'none';
+            
+            // Hide any captured/uploaded images
+            const capturedImg = document.getElementById('capturedImg');
+            if (capturedImg) capturedImg.style.display = 'none';
 
             // Update button states
             document.getElementById('captureBtn').style.display = 'flex';
             document.getElementById('retakeBtn').style.display = 'none';
             document.getElementById('analyzeBtn').style.display = 'none';
+            document.getElementById('uploadFallback').style.display = 'block';
 
-            // Restart camera
+            // Restart camera or show upload option
             openCamera(document.getElementById('emailInput').value);
         }
 
@@ -434,8 +467,126 @@
             localStorage.setItem('capturedImageData', capturedImageData);
             localStorage.setItem('userEmail', userEmail);
             
-            // Navigate to analysis page
-            window.location.href = `analysis.html?email=${encodeURIComponent(userEmail)}&image=${encodeURIComponent(capturedImageData)}`;
+            // Navigate to analysis page (data already stored in localStorage)
+            window.location.href = 'analysis.html';
+        }
+
+        function uploadImage() {
+            const fileInput = document.getElementById('imageUpload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select an image file first.');
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+            
+            // Read the file and convert to data URL
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                capturedImageData = e.target.result;
+                
+                console.log('Image loaded, attempting to display...');
+                
+                // Hide the camera preview and show the dedicated image preview
+                const cameraPreview = document.getElementById('cameraPreview');
+                const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+                const uploadedImage = document.getElementById('uploadedImage');
+                
+                // Hide camera preview
+                if (cameraPreview) {
+                    cameraPreview.style.display = 'none';
+                }
+                
+                // Show and populate the dedicated image preview
+                if (uploadedImagePreview && uploadedImage) {
+                    uploadedImagePreview.style.display = 'block';
+                    uploadedImage.src = capturedImageData;
+                    
+                    // Handle successful image load
+                    uploadedImage.onload = function() {
+                        console.log('Image displayed successfully in dedicated preview area');
+                        
+                        // Update UI
+                        document.getElementById('uploadFallback').style.display = 'none';
+                        document.getElementById('retakeBtn').style.display = 'inline-block';
+                        document.getElementById('analyzeBtn').style.display = 'inline-block';
+                        
+                        alert('Image uploaded successfully! Click "Analyze Sample" to proceed.');
+                    };
+                    
+                    uploadedImage.onerror = function() {
+                        console.error('Image failed to load in preview');
+                        alert('Image failed to display. Please try a different image.');
+                    };
+                } else {
+                    console.error('Image preview elements not found');
+                }
+            };
+            
+            reader.onerror = function() {
+                alert('Failed to read the selected file. Please try again.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function loadTestRockSample() {
+            console.log('Loading test rock sample...');
+            
+            // Hide camera preview and show image preview
+            const cameraPreview = document.getElementById('cameraPreview');
+            const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+            const uploadedImage = document.getElementById('uploadedImage');
+            
+            // Hide camera preview
+            if (cameraPreview) {
+                cameraPreview.style.display = 'none';
+            }
+            
+            // Load the test rock sample image
+            const testImageUrl = 'rock_sample_test.png';
+            
+            if (uploadedImagePreview && uploadedImage) {
+                uploadedImagePreview.style.display = 'block';
+                uploadedImage.src = testImageUrl;
+                
+                // Convert to data URL for analysis
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Create canvas to convert to data URL
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Store the image data
+                    capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    console.log('Test rock sample loaded successfully');
+                    
+                    // Update UI
+                    document.getElementById('uploadFallback').style.display = 'none';
+                    document.getElementById('retakeBtn').style.display = 'inline-block';
+                    document.getElementById('analyzeBtn').style.display = 'inline-block';
+                    
+                    alert('Test rock sample loaded! Click "Analyze Sample" to proceed.');
+                };
+                
+                img.onerror = function() {
+                    console.error('Failed to load test rock sample image');
+                    alert('Failed to load test rock sample. Please check that rock_sample_test.png exists.');
+                };
+                
+                img.src = testImageUrl;
+            }
         }
     </script>
 </body>

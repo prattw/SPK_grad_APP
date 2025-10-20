@@ -210,8 +210,8 @@
                 // Store results and redirect to results page
                 localStorage.setItem('analysisResult', mockResults);
                 
-                // Redirect to results page
-                window.location.href = `results.html?email=${encodeURIComponent(userEmail)}&image=${encodeURIComponent(imageData)}&result=${encodeURIComponent(mockResults)}`;
+                // Redirect to results page (data already stored in localStorage)
+                window.location.href = 'results.html';
                 
             }, 3000);
         }

@@ -357,8 +357,9 @@
         // Handle sending results to backend
         async function sendToBackend() {
             try {
-                // Backend URL - update this if your backend runs on different port
-                const backendUrl = 'http://localhost:5000';
+                // Backend URL - use 10.0.2.2 for Android emulator, localhost for browser testing
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const backendUrl = isAndroid ? 'http://10.0.2.2:5001' : 'http://localhost:5001';
                 const response = await fetch(`${backendUrl}/api/send-results`, {
                     method: 'POST',
                     headers: {
