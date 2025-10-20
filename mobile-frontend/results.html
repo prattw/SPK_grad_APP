@@ -301,7 +301,7 @@
             displayAnalysisResults(mockResults);
         }
 
-        function sendResults() {
+        async function sendResults() {
             const acceptBtn = document.getElementById('acceptBtn');
             const statusDiv = document.getElementById('statusMessage');
             
@@ -318,12 +318,9 @@
             statusDiv.textContent = 'Preparing and sending CSV results...';
             statusDiv.style.display = 'block';
 
-            // Simulate sending email with CSV
-            setTimeout(() => {
-                // Here you would:
-                // 1. Generate CSV from analysis results
-                // 2. Send email to userEmail with CSV attachment
-                // 3. Handle the actual email sending via your backend
+            try {
+                // Call the backend to send email with CSV
+                const response = await sendToBackend();
                 
                 acceptBtn.textContent = 'Email Sent ✓';
                 acceptBtn.style.backgroundColor = '#28a745';
@@ -341,13 +338,28 @@
                     window.location.href = 'index.html';
                 }, 2000);
                 
-            }, 3000);
+            } catch (error) {
+                console.error('Error sending results:', error);
+                
+                // Reset button on error
+                acceptBtn.textContent = 'Accept';
+                acceptBtn.disabled = false;
+                
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = `
+                    <strong>Error!</strong><br>
+                    Failed to send CSV results.<br>
+                    Please try again or contact support.
+                `;
+            }
         }
 
         // Handle sending results to backend
         async function sendToBackend() {
             try {
-                const response = await fetch('/api/send-results', {
+                // Backend URL - update this if your backend runs on different port
+                const backendUrl = 'http://localhost:5000';
+                const response = await fetch(`${backendUrl}/api/send-results`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
