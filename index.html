@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>USACE Sacramento District</title>
     <style>
         * {
@@ -205,11 +208,17 @@
 </head>
 <body>
     <div class="container">
+        <!-- DEBUG: This should be clearly visible to confirm correct page is loading -->
+        <div style="background: red; color: white; padding: 10px; margin-bottom: 20px; text-align: center; font-weight: bold;">
+            ✅ USACE APP LOADED CORRECTLY ✅
+        </div>
+        
         <div class="logo">
             <!-- Primary logo from local SPK image file -->
-            <img src="SPK.png" alt="USACE Sacramento District Logo" 
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                 onload="this.style.display='block'; this.nextElementSibling.style.display='none';">
+            <img src="SPK.png?v=3" alt="USACE Sacramento District Logo" 
+                 onload="console.log('USACE logo loaded successfully')"
+                 onerror="console.error('Failed to load USACE logo:', this.src); this.style.display='none';">
+            <div style="font-size: 24px; font-weight: bold; color: #333; margin-top: 20px;">USACE Sacramento District</div>
         </div>
         
         <form id="emailForm">

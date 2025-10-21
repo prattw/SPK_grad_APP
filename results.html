@@ -357,9 +357,17 @@
         // Handle sending results to backend
         async function sendToBackend() {
             try {
-                // Backend URL - use 10.0.2.2 for Android emulator, localhost for browser testing
+                // Backend URL - detect device type and use appropriate IP
                 const isAndroid = /Android/i.test(navigator.userAgent);
-                const backendUrl = isAndroid ? 'http://10.0.2.2:5001' : 'http://localhost:5001';
+                let backendUrl;
+                if (isAndroid) {
+                    // For physical Android devices, use computer's IP address
+                    // For emulator, use 10.0.2.2
+                    const isEmulator = window.location.hostname === '10.0.2.2' || window.location.hostname.includes('emulator');
+                    backendUrl = isEmulator ? 'http://10.0.2.2:5001' : 'http://172.31.32.155:5001';
+                } else {
+                    backendUrl = 'http://localhost:5001';
+                }
                 const response = await fetch(`${backendUrl}/api/send-results`, {
                     method: 'POST',
                     headers: {

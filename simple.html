@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>USACE Sacramento District</title>
+    <style>
+        body {
+            background-color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .logo {
+            margin-bottom: 30px;
+        }
+        .logo img {
+            max-width: 250px;
+            height: auto;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid red;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #808080;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .test-banner {
+            background-color: red;
+            color: white;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="test-banner">
+            ✅ USACE APP - SIMPLE VERSION ✅
+        </div>
+        
+        <div class="logo">
+            <img src="SPK.png" alt="USACE Sacramento District Logo">
+            <h1>USACE Sacramento District</h1>
+        </div>
+        
+        <form id="emailForm">
+            <input type="email" id="emailInput" placeholder="Enter your email address" required>
+            <button type="submit">Take Picture of Sample</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const emailInput = document.getElementById('emailInput');
+            const email = emailInput.value;
+            
+            // Check if email is from approved domains
+            const approvedDomains = ['usace.army.mil', 'usgs.gov'];
+            const emailDomain = email.split('@')[1];
+            
+            if (!approvedDomains.includes(emailDomain)) {
+                alert('Invalid email address');
+                return;
+            }
+            
+            alert('Valid email! Email: ' + email);
+        });
+    </script>
+</body>
+</html>
