@@ -136,3 +136,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Android / Gradle
+mobile-app/build/
+mobile-app/.gradle/
+mobile-app/captures/
+mobile-app/.idea/
+mobile-app/*.iml
+mobile-app/local.properties
+mobile-app/app/build/
+mobile-app/.externalNativeBuild/
+mobile-app/.cxx/
+mobile-app/app/release/

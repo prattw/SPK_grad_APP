@@ -25,3 +25,5 @@ The form submission handler is ready for your friend to integrate with:
 
 The email is captured and ready to be sent along with the captured images to your backend processing pipeline.
 
+
+

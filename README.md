@@ -142,6 +142,25 @@ To report an issue, please follow these steps:
 
 We appreciate you taking the time to report any issues you encounter. Your feedback helps us improve.
 
+## Mobile Application
+
+This repository also includes a mobile Android application (`mobile-app/`) for on-the-go grain analysis. The mobile app provides:
+
+- **Camera Integration**: Capture images directly on Android devices
+- **AI-Powered Analysis**: Uses ExecuTorch models for grain segmentation
+- **Real-time Results**: Immediate rock counting and size analysis
+- **Sieve Size Classification**: Standard US sieve size analysis and CSV export
+- **Calibration Tools**: Manual calibration for accurate real-world measurements
+
+### Mobile App Setup
+1. Navigate to the `mobile-app/` directory
+2. Open the project in Android Studio
+3. Build and install on your Android device or emulator
+4. Grant camera permissions when prompted
+5. Capture rock images and analyze them directly on your device
+
+The mobile app integrates with the core segmenteverygrain algorithms and provides a user-friendly interface for field geology work.
+
 ## Acknowledgements
 
 Thanks to Danny Stockli, Nick Howes, Kalinda Roberts, Jake Covault, Matt Malkowski, Raymond Luong, Wilson Bai, Rowan Martindale, and Sergey Fomel for discussions and/or helping with generating training data. Funding for this work came from the [Quantitative Clastics Laboratory industrial consortium](http://www.beg.utexas.edu/qcl) at the Bureau of Economic Geology, The University of Texas at Austin.
