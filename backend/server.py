@@ -218,6 +218,15 @@ def analyze_image():
         }), 500
 
 
+@app.route('/')
+def index():
+    """Root route so the backend URL doesn't 404 when opened in a browser."""
+    return jsonify({
+        'service': 'SPK Grad App API',
+        'status': 'running',
+        'endpoints': {'health': '/api/health', 'analyze': '/api/analyze-image', 'send_results': '/api/send-results'}
+    }), 200
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
