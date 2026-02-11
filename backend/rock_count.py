@@ -143,6 +143,14 @@ def count_rocks(
     except Exception as e:
         return {"count": 0, "method": "none", "error": str(e)}
 
+    # Resize very large images to avoid OOM and timeouts on small instances (e.g. Render free tier)
+    max_side = 1200
+    h, w = img.shape[:2]
+    if max(h, w) > max_side:
+        scale = max_side / max(h, w)
+        new_w, new_h = int(w * scale), int(h * scale)
+        img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
     try:
         mask = _get_binary_mask(img, blur_radius=blur, use_otsu=True)
         mask = _morphology_cleanup(mask, open_radius=2, close_radius=3)
