@@ -26,7 +26,16 @@ except ImportError:
     pass
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB max request body
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+@app.errorhandler(413)
+def request_entity_too_large(e):
+    return jsonify({'error': 'Image too large. Please use a smaller photo.', 'grainCount': 0, 'method': 'none'}), 413
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({'error': str(e) if str(e) else 'Server error', 'grainCount': 0, 'method': 'none'}), 500
 
 # Email configuration - set via environment variables (see .env.example)
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
