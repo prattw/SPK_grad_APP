@@ -27,7 +27,19 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB max request body
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}}, allow_headers=["Content-Type"], methods=["GET", "POST", "OPTIONS"])
+
+@app.before_request
+def handle_preflight():
+    """Respond to CORS preflight (OPTIONS) for all routes so browsers can POST from other origins."""
+    if request.method == "OPTIONS":
+        from flask import make_response
+        r = make_response("", 204)
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        r.headers["Access-Control-Max-Age"] = "86400"
+        return r
 
 @app.errorhandler(413)
 def request_entity_too_large(e):
@@ -195,6 +207,7 @@ def send_results():
         }), 500
 
 @app.route('/api/analyze-image', methods=['OPTIONS', 'POST'])
+@app.route('/api/analyze-image/', methods=['OPTIONS', 'POST'])
 def analyze_image_options():
     """Allow CORS preflight (OPTIONS) so browsers can POST from other origins."""
     if request.method == 'OPTIONS':
