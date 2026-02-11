@@ -213,6 +213,33 @@
         // set e.g. 'http://localhost:5001' if backend runs on a different host/port.
         const BACKEND_URL = window.BACKEND_URL || '';
 
+        function resizeImageDataUrl(dataUrl, maxSize) {
+            maxSize = maxSize || 1200;
+            return new Promise(function (resolve, reject) {
+                var img = new Image();
+                img.onload = function () {
+                    var w = img.width, h = img.height;
+                    if (w <= maxSize && h <= maxSize) {
+                        resolve(dataUrl);
+                        return;
+                    }
+                    var scale = maxSize / Math.max(w, h);
+                    var c = document.createElement('canvas');
+                    c.width = Math.round(w * scale);
+                    c.height = Math.round(h * scale);
+                    var ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0, c.width, c.height);
+                    try {
+                        resolve(c.toDataURL('image/jpeg', 0.85));
+                    } catch (e) {
+                        resolve(dataUrl);
+                    }
+                };
+                img.onerror = function () { resolve(dataUrl); };
+                img.src = dataUrl;
+            });
+        }
+
         async function analyzeSample() {
             const analyzeBtn = document.getElementById('analyzeBtn');
             const statusDiv = document.getElementById('statusMessage');
@@ -225,8 +252,15 @@
             analyzeBtn.textContent = 'Analyzing...';
             analyzeBtn.disabled = true;
             statusDiv.className = 'status-message status-processing';
-            statusDiv.textContent = 'Analysis in progress. Please wait...';
+            statusDiv.textContent = 'Resizing image and analyzing...';
             statusDiv.style.display = 'block';
+
+            let payloadData = imageData;
+            try {
+                payloadData = await resizeImageDataUrl(imageData, 1200);
+            } catch (_) {}
+
+            statusDiv.textContent = 'Analysis in progress. Please wait...';
 
             let grainCount = null;
             let errorMessage = null;
@@ -236,15 +270,22 @@
                 const res = await fetch(BACKEND_URL + '/api/analyze-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageData: imageData }),
+                    body: JSON.stringify({ imageData: payloadData }),
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
                 let data;
+                const text = await res.text();
                 try {
-                    data = await res.json();
+                    data = text ? JSON.parse(text) : {};
                 } catch (_) {
-                    data = { error: res.statusText || 'Invalid response from server' };
+                    if (res.status === 413) {
+                        data = { error: 'Image too large. Try a smaller photo or retake.' };
+                    } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+                        data = { error: 'Server temporarily unavailable. Please try again in a moment.' };
+                    } else {
+                        data = { error: 'Invalid response from server (status ' + res.status + '). Try again.' };
+                    }
                 }
                 if (!res.ok) {
                     errorMessage = data.error || res.statusText || 'Analysis failed';
