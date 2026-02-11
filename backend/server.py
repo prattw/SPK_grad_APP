@@ -16,15 +16,23 @@ from email.mime.base import MIMEBase
 from email import encoders
 import io
 
-app = Flask(__name__)
+from rock_count import count_rocks
+from flask_cors import CORS
 
-# Email configuration - UPDATE THESE VALUES
-# NOTE: You need to find the correct SMTP server for CCA
-# Common options: smtp.gmail.com, smtp.outlook.com, or CCA's specific server
-SMTP_SERVER = "smtp.gmail.com"  # Default - UPDATE with correct CCA SMTP server
-SMTP_PORT = 587
-EMAIL_USERNAME = "pratt@cca.edu"  # CCA email address
-EMAIL_PASSWORD = "thiigjismzexedub"  # App password (should be exactly 16 chars)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Email configuration - set via environment variables (see .env.example)
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+EMAIL_USERNAME = os.environ.get("EMAIL_USERNAME", "")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
 
 def generate_csv_results(analysis_data, image_filename, email_address):
     """Generate CSV file with analysis results"""
@@ -176,6 +184,40 @@ def send_results():
             'error': f'Server error: {str(e)}'
         }), 500
 
+@app.route('/api/analyze-image', methods=['POST'])
+def analyze_image():
+    """
+    Analyze an image and return rock/grain count.
+    Expects JSON: { "imageData": "data:image/jpeg;base64,..." }
+    Returns JSON: { "grainCount": int, "method": str, "error": str or null }
+    """
+    try:
+        data = request.json or {}
+        image_data = data.get('imageData') or data.get('image')
+        if not image_data:
+            return jsonify({'error': 'imageData or image required (base64 data URL or string)'}), 400
+
+        result = count_rocks(
+            image_data,
+            blur=5,
+            use_watershed=True,
+            min_area_px=50,
+            max_area_frac=0.4,
+            watershed_min_distance=10,
+        )
+        return jsonify({
+            'grainCount': result['count'],
+            'method': result['method'],
+            'error': result['error'],
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'grainCount': 0,
+            'method': 'none',
+            'error': str(e),
+        }), 500
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -219,8 +261,7 @@ def test_email():
         }), 500
 
 if __name__ == '__main__':
-    # Check if email credentials are set
-    if EMAIL_PASSWORD == "your-app-password":
-        print("WARNING: Please update EMAIL_PASSWORD in server.py with your CCA email app password")
-    
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    if not EMAIL_PASSWORD:
+        print("WARNING: Set EMAIL_PASSWORD (and EMAIL_USERNAME) for email features.")
+    app.run(debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true", host='0.0.0.0', port=port)

@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
     <title>Sample Analysis - USACE</title>
     <style>
         * {
@@ -14,17 +17,23 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: white;
-            height: 100vh;
+            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            padding-left: max(20px, env(safe-area-inset-left));
+            padding-right: max(20px, env(safe-area-inset-right));
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container {
             width: 100%;
-            max-width: 400px;
+            max-width: min(400px, 100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
             text-align: center;
         }
 
@@ -40,6 +49,12 @@
             display: block;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        .review-hint {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #555;
         }
 
         .captured-image {
@@ -61,6 +76,7 @@
         }
 
         .retake-btn {
+            min-height: 44px;
             padding: 12px 24px;
             border: 2px solid #808080;
             background-color: white;
@@ -72,6 +88,7 @@
         }
 
         .analyze-btn {
+            min-height: 44px;
             padding: 12px 24px;
             border: none;
             background-color: #28a745;
@@ -92,6 +109,7 @@
         }
 
         .back-btn {
+            min-height: 44px;
             padding: 10px 20px;
             border: 2px solid #808080;
             background-color: white;
@@ -120,6 +138,12 @@
             background-color: #d4edda;
             border: 1px solid #c3e6cb;
             color: #155724;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
 
         @media (max-width: 480px) {
@@ -153,7 +177,8 @@
             <img src="SPK.png" alt="USACE Sacramento District Logo">
         </div>
         
-        <h2>Review Your Sample Photo</h2>
+        <h2>Confirm your photo</h2>
+        <p class="review-hint">If this looks good, tap <strong>Analyze Sample</strong> to count the rocks.</p>
         
         <img id="reviewImage" class="captured-image" alt="Captured rock sample">
         
@@ -165,6 +190,7 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
         // Get image data from URL parameters or localStorage
         const urlParams = new URLSearchParams(window.location.search);
@@ -183,89 +209,66 @@
             document.getElementById('reviewImage').style.display = 'none';
         }
 
-        function analyzeSample() {
+        // Backend API base URL. Use '' when frontend is served from same origin as backend;
+        // set e.g. 'http://localhost:5001' if backend runs on a different host/port.
+        const BACKEND_URL = window.BACKEND_URL || '';
+
+        async function analyzeSample() {
             const analyzeBtn = document.getElementById('analyzeBtn');
             const statusDiv = document.getElementById('statusMessage');
-            
+
             if (!imageData) {
                 alert('No image data found. Please return to camera.');
                 return;
             }
 
-            // Show processing state
             analyzeBtn.textContent = 'Analyzing...';
             analyzeBtn.disabled = true;
-            
             statusDiv.className = 'status-message status-processing';
             statusDiv.textContent = 'Analysis in progress. Please wait...';
             statusDiv.style.display = 'block';
 
-            // Simulate analysis process (replace with actual backend call)
-            setTimeout(() => {
-                // Here you would send the image to your segmentation backend
-                // const analysisResult = await sendToBackend(imageData, userEmail);
-                
-                // Mock analysis results for now
-                let grainCount;
-                
-                // NEW APPROACH: Check for direct rock count first
-                const exactRockCount = localStorage.getItem('exactRockCount');
-                console.log('=== ROCK COUNT DETECTION DEBUG ===');
-                console.log('Direct rock count from localStorage:', exactRockCount);
-                
-                if (exactRockCount) {
-                    grainCount = parseInt(exactRockCount);
-                    console.log('✅ USING DIRECT COUNT:', grainCount, 'rocks');
-                } else {
-                    // FALLBACK: Check image data size - test rock sample is ~2.3MB
-                    const imageDataSize = imageData ? imageData.length : 0;
-                    console.log('Image data size:', imageDataSize, 'bytes');
-                    
-                    // Test rock sample characteristics: file is 2.37MB, data URL is ~3.16MB (base64 encoding)
-                    const isTestRockSampleBySize = imageDataSize > 2500000;
-                    console.log('Size-based detection (>2.5MB):', isTestRockSampleBySize);
-                    
-                    // FALLBACK: Check localStorage flags (but they seem unreliable)
-                    const flag1 = isTestRockSample;
-                    const flag2 = localStorage.getItem('isTestRockSample') === 'true';
-                    const flag3 = localStorage.getItem('testRockSampleUsed') === 'true';
-                    const flag4 = localStorage.getItem('useRockCount20') === 'true';
-                    
-                    console.log('Flag 1 (page load):', flag1);
-                    console.log('Flag 2 (localStorage):', flag2);
-                    console.log('Flag 3 (alternative):', flag3);
-                    console.log('Flag 4 (direct instruction):', flag4);
-                    
-                    const isDefinitelyTestSample = isTestRockSampleBySize || flag1 || flag2 || flag3 || flag4;
-                    console.log('FINAL DECISION - Test sample:', isDefinitelyTestSample);
-                    
-                    if (isDefinitelyTestSample) {
-                        grainCount = 20; // ACCURATE COUNT: Test rock sample has exactly 20 rocks
-                        console.log('✅ CONFIRMED: Using accurate count of 20 rocks');
-                    } else {
-                        grainCount = Math.floor(Math.random() * 50) + 10; // Random for other images
-                        console.log('❌ Using random count:', grainCount);
-                    }
-                }
-                
-                const mockResults = JSON.stringify({
-                    grainCount: grainCount,
-                    analyzedImage: imageData
+            let grainCount = null;
+            try {
+                const res = await fetch(BACKEND_URL + '/api/analyze-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageData: imageData })
                 });
-                
-                // Store results and redirect to results page
-                localStorage.setItem('analysisResult', mockResults);
-                
-                // Clear the test rock sample flags after analysis
-                localStorage.removeItem('isTestRockSample');
-                localStorage.removeItem('testRockSampleUsed');
-                localStorage.removeItem('useRockCount20');
-                localStorage.removeItem('exactRockCount');
-                
-                // Redirect to results page (data already stored in localStorage)
-                window.location.href = 'results.html';
-                
-            }, 3000);
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || res.statusText || 'Analysis failed');
+                }
+                grainCount = data.grainCount != null ? data.grainCount : null;
+                if (data.method) console.log('Rock count method:', data.method);
+                if (data.error) console.warn('Backend warning:', data.error);
+            } catch (err) {
+                console.error('Analysis request failed:', err);
+                statusDiv.className = 'status-message status-error';
+                statusDiv.textContent = 'Could not reach analysis server. Check connection and try again.';
+                statusDiv.style.display = 'block';
+                analyzeBtn.textContent = 'Analyze Sample';
+                analyzeBtn.disabled = false;
+                return;
+            }
+
+            // Fallback only when we have a known exact count (e.g. test sample)
+            if (grainCount == null) {
+                const exactRockCount = localStorage.getItem('exactRockCount');
+                if (exactRockCount) grainCount = parseInt(exactRockCount, 10);
+            }
+            if (grainCount == null || isNaN(grainCount)) grainCount = 0;
+
+            const analysisResult = JSON.stringify({
+                grainCount: grainCount,
+                analyzedImage: imageData
+            });
+            localStorage.setItem('analysisResult', analysisResult);
+            localStorage.removeItem('isTestRockSample');
+            localStorage.removeItem('testRockSampleUsed');
+            localStorage.removeItem('useRockCount20');
+            localStorage.removeItem('exactRockCount');
+            window.location.href = 'results.html';
         }
 
         // Load image and email from previous session
