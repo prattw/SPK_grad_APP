@@ -144,10 +144,11 @@ Sent from: pratt@cca.edu
     except Exception as e:
         return False, f"Failed to send email: {str(e)}"
 
-@app.route('/api/send-results', methods=['POST'])
+@app.route('/api/send-results', methods=['OPTIONS', 'POST'])
 def send_results():
     """Handle CSV generation and email sending"""
-    
+    if request.method == 'OPTIONS':
+        return '', 204
     try:
         data = request.json
         
@@ -193,8 +194,14 @@ def send_results():
             'error': f'Server error: {str(e)}'
         }), 500
 
-@app.route('/api/analyze-image', methods=['POST'])
-def analyze_image():
+@app.route('/api/analyze-image', methods=['OPTIONS', 'POST'])
+def analyze_image_options():
+    """Allow CORS preflight (OPTIONS) so browsers can POST from other origins."""
+    if request.method == 'OPTIONS':
+        return '', 204
+    return analyze_image_impl()
+
+def analyze_image_impl():
     """
     Analyze an image and return rock/grain count.
     Expects JSON: { "imageData": "data:image/jpeg;base64,..." }
