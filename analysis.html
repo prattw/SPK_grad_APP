@@ -229,23 +229,38 @@
             statusDiv.style.display = 'block';
 
             let grainCount = null;
+            let errorMessage = null;
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 90000);
                 const res = await fetch(BACKEND_URL + '/api/analyze-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageData: imageData })
+                    body: JSON.stringify({ imageData: imageData }),
+                    signal: controller.signal
                 });
-                const data = await res.json();
+                clearTimeout(timeoutId);
+                let data;
+                try {
+                    data = await res.json();
+                } catch (_) {
+                    data = { error: res.statusText || 'Invalid response from server' };
+                }
                 if (!res.ok) {
-                    throw new Error(data.error || res.statusText || 'Analysis failed');
+                    errorMessage = data.error || res.statusText || 'Analysis failed';
+                    throw new Error(errorMessage);
                 }
                 grainCount = data.grainCount != null ? data.grainCount : null;
                 if (data.method) console.log('Rock count method:', data.method);
-                if (data.error) console.warn('Backend warning:', data.error);
+                if (data.error) errorMessage = data.error;
             } catch (err) {
                 console.error('Analysis request failed:', err);
                 statusDiv.className = 'status-message status-error';
-                statusDiv.textContent = 'Could not reach analysis server. Check connection and try again.';
+                if (err.name === 'AbortError') {
+                    statusDiv.textContent = 'Request timed out. The server may be waking up — try again in a moment.';
+                } else {
+                    statusDiv.textContent = errorMessage || err.message || 'Could not reach analysis server. Check connection and try again.';
+                }
                 statusDiv.style.display = 'block';
                 analyzeBtn.textContent = 'Analyze Sample';
                 analyzeBtn.disabled = false;
@@ -258,6 +273,12 @@
                 if (exactRockCount) grainCount = parseInt(exactRockCount, 10);
             }
             if (grainCount == null || isNaN(grainCount)) grainCount = 0;
+
+            if (errorMessage) {
+                statusDiv.className = 'status-message status-processing';
+                statusDiv.textContent = 'Analysis completed with a warning: ' + errorMessage;
+                statusDiv.style.display = 'block';
+            }
 
             const analysisResult = JSON.stringify({
                 grainCount: grainCount,
