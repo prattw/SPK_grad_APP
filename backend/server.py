@@ -220,14 +220,23 @@ def analyze_image_options():
 def analyze_image_impl():
     """
     Analyze an image and return rock/grain count.
-    Expects JSON: { "imageData": "data:image/jpeg;base64,..." }
-    Returns JSON: { "grainCount": int, "method": str, "error": str or null }
+    Expects JSON: { "imageData": "data:image/jpeg;base64,...", optional "scaleMmPerPixel": float }
+    scaleMmPerPixel: from LiDAR (native app); enables size distribution in mm.
+    Returns JSON: { "grainCount": int, "method": str, "error": str or null,
+                    optional "sizeDistributionMm": [float, ...] }
     """
     try:
         data = request.json or {}
         image_data = data.get('imageData') or data.get('image')
         if not image_data:
             return jsonify({'error': 'imageData or image required (base64 data URL or string)'}), 400
+
+        scale_mm_per_pixel = None
+        if 'scaleMmPerPixel' in data and data['scaleMmPerPixel'] is not None:
+            try:
+                scale_mm_per_pixel = float(data['scaleMmPerPixel'])
+            except (TypeError, ValueError):
+                pass
 
         result = count_rocks(
             image_data,
@@ -238,12 +247,16 @@ def analyze_image_impl():
             watershed_min_distance=48,
             morph_open_radius=5,
             morph_close_radius=8,
+            scale_mm_per_pixel=scale_mm_per_pixel,
         )
-        return jsonify({
+        response = {
             'grainCount': result['count'],
             'method': result['method'],
             'error': result['error'],
-        }), 200
+        }
+        if 'sizeDistributionMm' in result:
+            response['sizeDistributionMm'] = result['sizeDistributionMm']
+        return jsonify(response), 200
     except Exception as e:
         return jsonify({
             'grainCount': 0,

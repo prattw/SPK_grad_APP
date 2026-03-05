@@ -75,16 +75,22 @@ def count_with_connected_components(mask, min_area_px=50, max_area_frac=0.4):
     Count objects using OpenCV connectedComponentsWithStats.
     Filters by min_area_px and max area as fraction of image.
     """
+    count, _ = count_with_connected_components_areas(mask, min_area_px, max_area_frac)
+    return count
+
+
+def count_with_connected_components_areas(mask, min_area_px=50, max_area_frac=0.4):
+    """Like count_with_connected_components but returns (count, list of areas in px)."""
     h, w = mask.shape[:2]
     total = h * w
     max_area_px = int(total * max_area_frac)
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
-    count = 0
+    areas = []
     for i in range(1, num_labels):
         area = stats[i, cv2.CC_STAT_AREA]
         if min_area_px <= area <= max_area_px:
-            count += 1
-    return count
+            areas.append(int(area))
+    return len(areas), areas
 
 
 def count_with_watershed(mask, min_distance=10, min_area_px=50, max_area_frac=0.4):
@@ -92,30 +98,33 @@ def count_with_watershed(mask, min_distance=10, min_area_px=50, max_area_frac=0.
     Separate touching objects with watershed (scikit-image), then count.
     Uses distance transform and peak_local_max for markers.
     """
+    count, _ = count_with_watershed_areas(mask, min_distance, min_area_px, max_area_frac)
+    return count
+
+
+def count_with_watershed_areas(mask, min_distance=10, min_area_px=50, max_area_frac=0.4):
+    """Like count_with_watershed but returns (count, list of areas in px)."""
     if not SKIMAGE_AVAILABLE:
-        return count_with_connected_components(mask, min_area_px, max_area_frac)
-    # Distance transform (objects = white in our mask)
+        return count_with_connected_components_areas(mask, min_area_px, max_area_frac)
     dist = ndi.distance_transform_edt(mask)
-    # Local maxima as markers
     coords = peak_local_max(dist, min_distance=min_distance, exclude_border=True)
     if coords.size == 0:
-        return count_with_connected_components(mask, min_area_px, max_area_frac)
+        return count_with_connected_components_areas(mask, min_area_px, max_area_frac)
     markers = np.zeros_like(mask, dtype=np.int32)
     for idx, (r, c) in enumerate(coords, start=1):
         markers[r, c] = idx
-    # Watershed on negative distance so basins are objects
     labels_ws = watershed(-dist, markers, mask=mask.astype(bool))
     h, w = mask.shape[:2]
     total = h * w
     max_area_px = int(total * max_area_frac)
-    count = 0
+    areas = []
     for uid in np.unique(labels_ws):
         if uid == 0:
             continue
-        area = np.sum(labels_ws == uid)
+        area = int(np.sum(labels_ws == uid))
         if min_area_px <= area <= max_area_px:
-            count += 1
-    return count
+            areas.append(area)
+    return len(areas), areas
 
 
 def count_rocks(
@@ -128,14 +137,18 @@ def count_rocks(
     watershed_min_distance=10,
     morph_open_radius=2,
     morph_close_radius=3,
+    scale_mm_per_pixel=None,
 ):
     """
     Count rocks/grains in an image.
 
     image_input: base64 data URL string (e.g. from canvas.toDataURL('image/jpeg'))
                  or bytes (raw base64) or numpy BGR array.
+    scale_mm_per_pixel: optional float from LiDAR (mm per pixel at capture). If set,
+                        returns sizeDistributionMm (equivalent diameter in mm per grain).
 
-    Returns dict: { "count": int, "method": "watershed"|"connected_components", "error": str or None }
+    Returns dict: { "count": int, "method": str, "error": str or None,
+                    "sizeDistributionMm": [float, ...] if scale_mm_per_pixel given }
     """
     try:
         if isinstance(image_input, np.ndarray):
@@ -157,20 +170,41 @@ def count_rocks(
         mask = _get_binary_mask(img, blur_radius=blur, use_otsu=True)
         mask = _morphology_cleanup(mask, open_radius=morph_open_radius, close_radius=morph_close_radius)
 
+        return_areas = scale_mm_per_pixel is not None and scale_mm_per_pixel > 0
+
         if use_watershed and SKIMAGE_AVAILABLE:
-            count = count_with_watershed(
-                mask,
-                min_distance=watershed_min_distance,
-                min_area_px=min_area_px,
-                max_area_frac=max_area_frac,
-            )
+            if return_areas:
+                count, areas_px = count_with_watershed_areas(
+                    mask,
+                    min_distance=watershed_min_distance,
+                    min_area_px=min_area_px,
+                    max_area_frac=max_area_frac,
+                )
+            else:
+                count = count_with_watershed(
+                    mask,
+                    min_distance=watershed_min_distance,
+                    min_area_px=min_area_px,
+                    max_area_frac=max_area_frac,
+                )
+                areas_px = []
             method = "watershed"
         else:
-            count = count_with_connected_components(
-                mask, min_area_px=min_area_px, max_area_frac=max_area_frac
-            )
+            if return_areas:
+                count, areas_px = count_with_connected_components_areas(
+                    mask, min_area_px=min_area_px, max_area_frac=max_area_frac
+                )
+            else:
+                count = count_with_connected_components(
+                    mask, min_area_px=min_area_px, max_area_frac=max_area_frac
+                )
+                areas_px = []
             method = "connected_components"
 
-        return {"count": count, "method": method, "error": None}
+        out = {"count": count, "method": method, "error": None}
+        if return_areas and areas_px:
+            scale = float(scale_mm_per_pixel)
+            out["sizeDistributionMm"] = [round(2 * (a / np.pi) ** 0.5 * scale, 2) for a in areas_px]
+        return out
     except Exception as e:
         return {"count": 0, "method": "none", "error": str(e)}

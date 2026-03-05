@@ -161,6 +161,10 @@ This repository also includes a mobile Android application (`mobile-app/`) for o
 
 The mobile app integrates with the core segmenteverygrain algorithms and provides a user-friendly interface for field geology work.
 
+### Native iPad App (LiDAR + Model)
+
+A **native iPad app** (`mobile-ios/`) uses **LiDAR** for accurate scale (mm per pixel) and the **backend API** for grain count and size distribution in mm. Requires an iPad with LiDAR (e.g. iPad Pro 2020+). See `mobile-ios/README.md` for Xcode setup, capabilities, and the segmentation-model roadmap.
+
 ## Acknowledgements
 
 Thanks to Danny Stockli, Nick Howes, Kalinda Roberts, Jake Covault, Matt Malkowski, Raymond Luong, Wilson Bai, Rowan Martindale, and Sergey Fomel for discussions and/or helping with generating training data. Funding for this work came from the [Quantitative Clastics Laboratory industrial consortium](http://www.beg.utexas.edu/qcl) at the Bureau of Economic Geology, The University of Texas at Austin.
