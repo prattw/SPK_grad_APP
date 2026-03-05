@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Sample Analysis - USACE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: white;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            padding-left: max(20px, env(safe-area-inset-left));
+            padding-right: max(20px, env(safe-area-inset-right));
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            width: 100%;
+            max-width: min(400px, 100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .review-hint {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .captured-image {
+            width: 100%;
+            max-width: 350px;
+            height: 350px;
+            border: 2px solid red;
+            border-radius: 8px;
+            margin: 0 auto 30px auto;
+            object-fit: cover;
+            background-color: #f5f5f5;
+        }
+
+        .analysis-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .retake-btn {
+            min-height: 44px;
+            padding: 12px 24px;
+            border: 2px solid #808080;
+            background-color: white;
+            color: #808080;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .analyze-btn {
+            min-height: 44px;
+            padding: 12px 24px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .analyze-btn:hover {
+            background-color: #218838;
+        }
+
+        .analyze-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .back-btn {
+            min-height: 44px;
+            padding: 10px 20px;
+            border: 2px solid #808080;
+            background-color: white;
+            color: #808080;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .status-message {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status-processing {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .status-complete {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 480px) {
+            .logo img {
+                max-width: 200px;
+                max-height: 150px;
+            }
+            
+            .captured-image {
+                max-width: 280px;
+                max-height: 280px;
+            }
+            
+            .analysis-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .captured-image {
+                max-width: 250px;
+                max-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="SPK.png" alt="USACE Sacramento District Logo">
+        </div>
+        
+        <h2>Confirm your photo</h2>
+        <p class="review-hint">If this looks good, tap <strong>Analyze Sample</strong> to count the rocks.</p>
+        
+        <img id="reviewImage" class="captured-image" alt="Captured rock sample">
+        
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+        
+        <div class="analysis-controls">
+            <a href="index.html" class="retake-btn">Retake Photo</a>
+            <button class="analyze-btn" id="analyzeBtn" onclick="analyzeSample()">Analyze Sample</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Get image data from URL parameters or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const imageData = urlParams.get('image') || localStorage.getItem('capturedImageData');
+        const userEmail = urlParams.get('email') || localStorage.getItem('userEmail');
+        
+        // Check if this is the test rock sample right when page loads
+        const isTestRockSample = localStorage.getItem('isTestRockSample') === 'true';
+        console.log('Analysis page loaded - isTestRockSample flag:', isTestRockSample);
+
+        // Display the captured image
+        if (imageData) {
+            document.getElementById('reviewImage').src = imageData;
+        } else {
+            // Fallback if no image data
+            document.getElementById('reviewImage').style.display = 'none';
+        }
+
+        // Backend API base URL. Use '' when frontend is served from same origin as backend;
+        // set e.g. 'http://localhost:5001' if backend runs on a different host/port.
+        const BACKEND_URL = window.BACKEND_URL || '';
+
+        function resizeImageDataUrl(dataUrl, maxSize) {
+            maxSize = maxSize || 1200;
+            return new Promise(function (resolve, reject) {
+                var img = new Image();
+                img.onload = function () {
+                    var w = img.width, h = img.height;
+                    if (w <= maxSize && h <= maxSize) {
+                        resolve(dataUrl);
+                        return;
+                    }
+                    var scale = maxSize / Math.max(w, h);
+                    var c = document.createElement('canvas');
+                    c.width = Math.round(w * scale);
+                    c.height = Math.round(h * scale);
+                    var ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0, c.width, c.height);
+                    try {
+                        resolve(c.toDataURL('image/jpeg', 0.85));
+                    } catch (e) {
+                        resolve(dataUrl);
+                    }
+                };
+                img.onerror = function () { resolve(dataUrl); };
+                img.src = dataUrl;
+            });
+        }
+
+        async function analyzeSample() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const statusDiv = document.getElementById('statusMessage');
+
+            if (!imageData) {
+                alert('No image data found. Please return to camera.');
+                return;
+            }
+
+            analyzeBtn.textContent = 'Analyzing...';
+            analyzeBtn.disabled = true;
+            statusDiv.className = 'status-message status-processing';
+            statusDiv.textContent = 'Resizing image and analyzing...';
+            statusDiv.style.display = 'block';
+
+            let payloadData = imageData;
+            try {
+                payloadData = await resizeImageDataUrl(imageData, 1200);
+            } catch (_) {}
+
+            statusDiv.textContent = 'Analysis in progress. Please wait...';
+
+            let grainCount = null;
+            let errorMessage = null;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 90000);
+                const res = await fetch(BACKEND_URL + '/api/analyze-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageData: payloadData }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                let data;
+                const text = await res.text();
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (_) {
+                    if (res.status === 413) {
+                        data = { error: 'Image too large. Try a smaller photo or retake.' };
+                    } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+                        data = { error: 'Server temporarily unavailable. Please try again in a moment.' };
+                    } else {
+                        data = { error: 'Invalid response from server (status ' + res.status + '). Try again.' };
+                    }
+                }
+                if (!res.ok) {
+                    errorMessage = data.error || res.statusText || 'Analysis failed';
+                    throw new Error(errorMessage);
+                }
+                grainCount = data.grainCount != null ? data.grainCount : null;
+                if (data.method) console.log('Rock count method:', data.method);
+                if (data.error) errorMessage = data.error;
+            } catch (err) {
+                console.error('Analysis request failed:', err);
+                statusDiv.className = 'status-message status-error';
+                if (err.name === 'AbortError') {
+                    statusDiv.textContent = 'Request timed out. The server may be waking up — try again in a moment.';
+                } else {
+                    statusDiv.textContent = errorMessage || err.message || 'Could not reach analysis server. Check connection and try again.';
+                }
+                statusDiv.style.display = 'block';
+                analyzeBtn.textContent = 'Analyze Sample';
+                analyzeBtn.disabled = false;
+                return;
+            }
+
+            // Fallback only when we have a known exact count (e.g. test sample)
+            if (grainCount == null) {
+                const exactRockCount = localStorage.getItem('exactRockCount');
+                if (exactRockCount) grainCount = parseInt(exactRockCount, 10);
+            }
+            if (grainCount == null || isNaN(grainCount)) grainCount = 0;
+
+            if (errorMessage) {
+                statusDiv.className = 'status-message status-processing';
+                statusDiv.textContent = 'Analysis completed with a warning: ' + errorMessage;
+                statusDiv.style.display = 'block';
+            }
+
+            const analysisResult = JSON.stringify({
+                grainCount: grainCount,
+                analyzedImage: imageData
+            });
+            localStorage.setItem('analysisResult', analysisResult);
+            localStorage.removeItem('isTestRockSample');
+            localStorage.removeItem('testRockSampleUsed');
+            localStorage.removeItem('useRockCount20');
+            localStorage.removeItem('exactRockCount');
+            window.location.href = 'results.html';
+        }
+
+        // Load image and email from previous session
+        document.addEventListener('DOMContentLoaded', function() {
+            if (imageData && userEmail) {
+                // Page loaded with data
+                console.log('Loaded analysis page with email:', userEmail);
+            } else {
+                // Redirect if no data
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
