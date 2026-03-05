@@ -209,9 +209,11 @@
             document.getElementById('reviewImage').style.display = 'none';
         }
 
-        // Backend API base URL. Use '' when frontend is served from same origin as backend;
-        // set e.g. 'http://localhost:5001' if backend runs on a different host/port.
-        const BACKEND_URL = window.BACKEND_URL || '';
+        // Backend API base URL. Use '' when frontend is served from same origin as backend.
+        // When on GitHub Pages, default to Render so we never POST to origin (which returns 405).
+        const PRODUCTION_BACKEND = 'https://spkgrad-backend.onrender.com';
+        const isGitHubPages = window.location.origin.includes('github.io');
+        const BACKEND_URL = (window.BACKEND_URL || (isGitHubPages ? PRODUCTION_BACKEND : '')) || '';
 
         function resizeImageDataUrl(dataUrl, maxSize) {
             maxSize = maxSize || 1200;
@@ -281,6 +283,8 @@
                 } catch (_) {
                     if (res.status === 413) {
                         data = { error: 'Image too large. Try a smaller photo or retake.' };
+                    } else if (res.status === 405) {
+                        data = { error: 'Analysis request was sent to the wrong server. Refresh the page and try again.' };
                     } else if (res.status === 502 || res.status === 503 || res.status === 504) {
                         data = { error: 'Server temporarily unavailable. Please try again in a moment.' };
                     } else {
