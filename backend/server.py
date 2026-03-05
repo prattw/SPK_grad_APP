@@ -231,11 +231,11 @@ def analyze_image_impl():
 
         result = count_rocks(
             image_data,
-            blur=5,
+            blur=7,
             use_watershed=True,
-            min_area_px=50,
+            min_area_px=150,
             max_area_frac=0.4,
-            watershed_min_distance=10,
+            watershed_min_distance=22,
         )
         return jsonify({
             'grainCount': result['count'],
