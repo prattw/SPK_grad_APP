@@ -126,6 +126,8 @@ def count_rocks(
     min_area_px=50,
     max_area_frac=0.4,
     watershed_min_distance=10,
+    morph_open_radius=2,
+    morph_close_radius=3,
 ):
     """
     Count rocks/grains in an image.
@@ -153,7 +155,7 @@ def count_rocks(
 
     try:
         mask = _get_binary_mask(img, blur_radius=blur, use_otsu=True)
-        mask = _morphology_cleanup(mask, open_radius=2, close_radius=3)
+        mask = _morphology_cleanup(mask, open_radius=morph_open_radius, close_radius=morph_close_radius)
 
         if use_watershed and SKIMAGE_AVAILABLE:
             count = count_with_watershed(
